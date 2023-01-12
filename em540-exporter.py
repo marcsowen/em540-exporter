@@ -17,6 +17,29 @@ pf = Gauge('em540_pf', 'Power factor line', ['phase'])
 wh = Gauge('em540_wh', 'Energy (Wh)', ['phase'])
 freq = Gauge('em540_hz', 'Line frequency')
 
+device_dict = {
+    0x06d0: 'EM530DINAV53XS1X',
+    0x06d1: 'EM530DINAV53XS1PFA',
+    0x06d2: 'EM530DINAV53XS1PFB',
+    0x06d3: 'EM530DINAV53XS1PFC',
+    0x06e0: 'EM540DINAV23XS1X',
+    0x06e1: 'EM540DINAV23XS1PFA',
+    0x06e2: 'EM540DINAV23XS1PFB',
+    0x06e3: 'EM540DINAV23XS1PFC'
+}
+
+measuring_system_dict = {
+    0: '3Pn',
+    1: '3P',
+    2: '2P'
+}
+
+measuring_mode_dict = {
+    0: 'A mode (absolute)',
+    1: 'B mode (counters accumulation by phase)',
+    2: 'C mode (bidirectional)'
+}
+
 if __name__ == '__main__':
     print("EM540 exporter v0.2\n")
     serial_port = '/dev/ttyUSB_em540'
@@ -24,10 +47,33 @@ if __name__ == '__main__':
     rs485_slave = 1
     server_port = 3725
 
-    print("Serial port: " + str(serial_port))
-    print("Port       : " + str(server_port) + "\n")
+    print("Serial port  :", str(serial_port))
+    print("Port         :", str(server_port))
 
     client = ModbusSerialClient(port=serial_port, baudrate=baud_rate)
+
+    response = client.read_holding_registers(0x000b, 1, rs485_slave)
+    print("Device       :", device_dict[response.getRegister(0)])
+
+    response = client.read_holding_registers(0x5000, 8, rs485_slave)
+    decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+
+    print("Serial       :", decoder.decode_string(13).decode('ascii'))
+    print("Year         :", response.getRegister(7))
+
+    response = client.read_holding_registers(0x0302, 1, rs485_slave)
+    fw_minor = response.getRegister(0) & 0x000f
+    fw_major = (response.getRegister(0) & 0x00f0) >> 4
+    revision = (response.getRegister(0) & 0xff00) >> 8
+    print("Firmware     : {0}.{1}".format(fw_major, fw_minor))
+    print("Revision     :", revision)
+
+    response = client.read_holding_registers(0x1002, 1, rs485_slave)
+    print("Meas. system :", measuring_system_dict[response.getRegister(0)])
+
+    reponse = client.read_holding_registers(0x1103, 1, rs485_slave)
+    print("Meas. mode   :", measuring_mode_dict[response.getRegister(0)])
+
     start_http_server(server_port)
 
     while True:
