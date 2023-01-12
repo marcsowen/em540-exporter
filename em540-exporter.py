@@ -41,7 +41,7 @@ measuring_mode_dict = {
 }
 
 if __name__ == '__main__':
-    print("EM540 exporter v0.2\n")
+    print("EM540 exporter v0.3\n")
     serial_port = '/dev/ttyUSB_em540'
     baud_rate = 115200
     rs485_slave = 1
@@ -64,9 +64,10 @@ if __name__ == '__main__':
     response = client.read_holding_registers(0x0302, 1, rs485_slave)
     fw_minor = response.getRegister(0) & 0x000f
     fw_major = (response.getRegister(0) & 0x00f0) >> 4
-    revision = (response.getRegister(0) & 0xff00) >> 8
+    rev_minor = (response.getRegister(0) & 0x0f00) >> 8
+    rev_major = (response.getRegister(0) & 0xf000) >> 12
     print("Firmware     : {0}.{1}".format(fw_major, fw_minor))
-    print("Revision     :", revision)
+    print("Revision     : {0}.{1}".format(rev_major, rev_minor))
 
     response = client.read_holding_registers(0x1002, 1, rs485_slave)
     print("Meas. system :", measuring_system_dict[response.getRegister(0)])
