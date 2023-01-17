@@ -14,6 +14,9 @@ watts = Gauge('em540_watts', 'Watts line', ['phase'])
 va = Gauge('em540_va', 'VA line', ['phase'])
 var = Gauge('em540_var', 'Var line', ['phase'])
 pf = Gauge('em540_pf', 'Power factor line', ['phase'])
+thd_i = Gauge('em540_thd_i', 'Total harmonic distortion amps', ['phase'])
+thd_l_n = Gauge('em540_thd_l_n', 'Total harmonic distortion volts line to neutral', ['phase'])
+thd_l_l = Gauge('em540_thd_l_l', 'Total harmonic distortion volts line to line', ['phase'])
 wh = Gauge('em540_wh', 'Energy (Wh)', ['phase'])
 freq = Gauge('em540_hz', 'Line frequency')
 
@@ -41,7 +44,7 @@ measuring_mode_dict = {
 }
 
 if __name__ == '__main__':
-    print("EM540 exporter v0.3\n")
+    print("EM540 exporter v0.4\n")
     serial_port = '/dev/ttyUSB_em540'
     baud_rate = 115200
     rs485_slave = 1
@@ -128,5 +131,28 @@ if __name__ == '__main__':
         decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
 
         freq.set(decoder.decode_32bit_int() / 1000)
+
+        response = client.read_holding_registers(0x0082, 6, rs485_slave)
+        decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+
+        thd_i.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
+        thd_i.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
+        thd_i.labels(phase='L3').set(decoder.decode_32bit_int() / 100)
+
+        response = client.read_holding_registers(0x008a, 6, rs485_slave)
+        decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+
+        thd_l_n.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
+        thd_l_n.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
+        thd_l_n.labels(phase='L3').set(decoder.decode_32bit_int() / 100)
+
+        response = client.read_holding_registers(0x0092, 8, rs485_slave)
+        decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+
+        thd_l_l.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
+        thd_l_l.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
+        thd_l_l.labels(phase='L3').set(decoder.decode_32bit_int() / 100)
+
+        amps.labels(phase='N').set(decoder.decode_32bit_int() / 1000)
 
         time.sleep(1)
