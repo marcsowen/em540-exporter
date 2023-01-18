@@ -132,22 +132,20 @@ if __name__ == '__main__':
 
         freq.set(decoder.decode_32bit_int() / 1000)
 
-        response = client.read_holding_registers(0x0082, 6, rs485_slave)
+        response = client.read_holding_registers(0x0082, 24, rs485_slave)
         decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
 
         thd_i.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
         thd_i.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
         thd_i.labels(phase='L3').set(decoder.decode_32bit_int() / 100)
 
-        response = client.read_holding_registers(0x008a, 6, rs485_slave)
-        decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+        decoder.skip_bytes(4)
 
         thd_l_n.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
         thd_l_n.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
         thd_l_n.labels(phase='L3').set(decoder.decode_32bit_int() / 100)
 
-        response = client.read_holding_registers(0x0092, 8, rs485_slave)
-        decoder = BinaryPayloadDecoder.fromRegisters(response.registers, byteorder=Endian.Big, wordorder=Endian.Little)
+        decoder.skip_bytes(4)
 
         thd_l_l.labels(phase='L1').set(decoder.decode_32bit_int() / 100)
         thd_l_l.labels(phase='L2').set(decoder.decode_32bit_int() / 100)
